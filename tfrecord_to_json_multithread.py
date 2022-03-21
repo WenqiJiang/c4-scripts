@@ -1,11 +1,12 @@
 # Example Usage: 
 #   python3 tfrecord_to_json_multithread.py --dir_in 'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/' --dir_out 'gs://c4_dataset/tensorflow_datasets/c4_json/enweb/3.0.1/'
-# it takes ~6 min on a single thread to convert 800MB tfrecord to a same size json in a single thread
+# it takes ~6 min on a single thread to convert 800MB tfrecord to a same size json in a single thread, and consumes the same time on 10-thread-10-file experiment
 
 import argparse 
 import json
 import os
 import sys
+import time
 import multiprocessing
 import tensorflow as tf
 
@@ -19,12 +20,8 @@ parser.add_argument('--dir_out', type=str, default='gs://c4_dataset/tensorflow_d
 
 args = parser.parse_args()
 
-dbname = args.dbname
-index_key = args.index_key
-
-dir_in = 
-dir_out = 
-
+dir_in = args.dir_in
+dir_out = args.dir_out
 
 # multiprocessing cannot access global variable
 # finished_count = 0
@@ -34,6 +31,7 @@ def tfrecord_to_json(args):
 
     fname, dir_in, dir_out, overwrite, delete_local = args
     
+    print("processing {}".format(fname))
     if not overwrite:
         # 0 means return success; other codes means exception and the file doesn't exist
         if os.system('gsutil ls {}'.format(os.path.join(dir_out, fname + '.json'))) == 0:
@@ -82,6 +80,7 @@ def tfrecord_to_json(args):
     
 if __name__ == '__main__':
     
+    start = time.time()
     # delete local file once they are copied to google storage
     delete_local=True
     
@@ -89,7 +88,7 @@ if __name__ == '__main__':
     overwrite = False
 
     # get file list
-    flist_txt = os.popen(dir_in).read()
+    flist_txt = os.popen('gsutil ls {}'.format(dir_in)).read()
     file_list = flist_txt.split('\n')
     # e.g., [..., 'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/c4-train.tfrecord-02047-of-02048', 
     #  'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/c4-validation.tfrecord-00000-of-00016', ...]
@@ -110,5 +109,8 @@ if __name__ == '__main__':
 
     arg_list = [(file_list[i], dir_in, dir_out, overwrite, delete_local) for i in range(len(file_list))]
     with multiprocessing.Pool(processes=max_threads) as pool:
-        pool.map(json_to_txt, arg_list)
+        pool.map(tfrecord_to_json, arg_list)
     
+    end = time.time()
+    t_all = end - start
+    print("Total time elapsed: {} sec = {} min = {} hour".format(t_all, t_all / 60, t_all / 3600))
