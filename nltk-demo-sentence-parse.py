@@ -5,3 +5,8 @@ text = 'Beginners BBQ Class Taking Place in Missoula!\nDo you want to get better
 text_list = sent_tokenize(text)
 for line in text_list:
     print(line)
+
+text_ch = "撒发的 。水电费奥德赛苏打粉asd\n安师大发生地方啊水电费啊"
+text_list_ch = sent_tokenize(text_ch)
+for line in text_list_ch:
+    print(line)

@@ -38,7 +38,11 @@ def tfrecord_to_json(args):
             print("File {} already exists, skip...".format(fname), file = sys.stdout)
             return
         
-    raw_dataset = tf.data.TFRecordDataset([os.path.join(dir_in, fname)])
+    try:
+        raw_dataset = tf.data.TFRecordDataset([os.path.join(dir_in, fname)])
+    except:
+        print("File {} cannot be interpreted as tfrecord".forma(os.path.join(dir_in, fname)))
+        return
 
     feature_description = {
         'text': tf.io.FixedLenFeature([], tf.string, default_value=''),
@@ -92,7 +96,12 @@ if __name__ == '__main__':
     file_list = flist_txt.split('\n')
     # e.g., [..., 'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/c4-train.tfrecord-02047-of-02048', 
     #  'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/c4-validation.tfrecord-00000-of-00016', ...]
-    file_list = sorted([fname for fname in file_list if 'train' in fname or 'validation' in fname])
+    file_list = sorted(file_list)
+    # For multi-lingual stuff, we remove all of the contents named "unknown"
+    #  e.g., c4-und.tfrecord-00008-of-01024.json
+    remove_keyword = 'c4-und'
+    file_list = [f for f in file_list if remove_keyword not in f]
+
     # keep file name only, remove dir
     # e.g., [..., 'c4-train.tfrecord-02047-of-02048', 'c4-validation.tfrecord-00000-of-00016', ...]
     file_list = [f.split('/')[-1] for f in file_list] 

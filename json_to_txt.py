@@ -1,30 +1,45 @@
 import json
+import jsonlines
 import os
 
 from nltk.tokenize import sent_tokenize
 
-lines = []
+GEN_PASSAGE = True
+GEN_SENTENCE = True
 
-fname = 'c4-train.00000-of-01024'
-dir_in = '/mnt/scratch/wenqi/c4/en/'
-dir_out = '../data/plain_c4/en/'
+passage_lines = []
+sentence_lines = []
+
+fname = 'c4-train.00000-of-02048'
+
+dir_in = '../'
+dir_out = '../'
 
 # Read json file (1 object per line)
 json_lines = None
 with open(os.path.join(dir_in, fname + '.json')) as f:
     json_lines = f.readlines()
 
-for json_line in json_lines:
-    paragraph = json.loads(json_line)['text']
-    sentences = sent_tokenize(paragraph)
-    sentences = [sent + '\n' for sent in sentences]
-    lines += sentences
+for i, json_line in enumerate(json_lines):
 
-# remove the last empty line
-if lines[-1] == '\n':
-    lines.pop()
+    json_obj = json.loads(json_line)
+    page = json.loads(json_line)['text']
+    url = json.loads(json_line)['url']
 
-# Write lines as plain text
-with open(os.path.join(dir_out, fname + '.txt'), 'w') as f:
-    f.writelines(lines)
+    if GEN_PASSAGE:
+        passages = page.split('\n')
+        passage_lines += [{'passage:': psg, 'url': url} for psg in passages]
+
+    if GEN_SENTENCE: 
+        sentences = sent_tokenize(page)
+        sentence_lines += [{'sentence:': st, 'url': url} for st in sentences]
+
+
+passage_file = os.path.join(dir_out, fname + '_passages.jsonl')
+with jsonlines.open(passage_file, 'w') as writer:
+    writer.write_all(passage_lines)
+
+sentence_file = os.path.join(dir_out, fname + '_sentences.jsonl')
+with jsonlines.open(sentence_file, 'w') as writer:
+    writer.write_all(sentence_lines)
 

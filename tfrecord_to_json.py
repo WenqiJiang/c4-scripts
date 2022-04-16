@@ -1,14 +1,25 @@
 # it takes ~6 min on a single thread to convert 800MB tfrecord to a same size json
+# Example: 
+#   python tfrecord_to_json.py --dir_in 'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/' --dir_out 'gs://c4-1billion/tensorflow_datasets/c4_json/enweb201930/3.0.1/' --fname "c4-train.tfrecord-00000-of-02048" --delete_local 1
 
 import tensorflow as tf
 import json
 import os
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--dir_in', type=str, default=0, help="")
+parser.add_argument('--dir_out', type=str, default=0, help="")
+parser.add_argument('--fname', type=str, default=0, help="")
+parser.add_argument('--delete_local', type=int, default=1, help="1->delete converted json locally after push it to google storage")
+args = parser.parse_args()
+dir_in = args.dir_in
+dir_out = args.dir_out
+fname = args.fname
+delete_local = args.delete_local
+
 delete_local=False
 
-dir_in = 'gs://c4_dataset/tensorflow_datasets/c4/enweb/3.0.1/'
-dir_out = 'gs://c4_dataset/tensorflow_datasets/c4_json/enweb/3.0.1/'
-fname = "c4-train.tfrecord-00000-of-02048"
 raw_dataset = tf.data.TFRecordDataset([os.path.join(dir_in, fname)])
 
 feature_description = {
