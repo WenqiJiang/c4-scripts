@@ -24,6 +24,10 @@ class BloomFilter(object):
         fp_prob : float
             False Positive probability in decimal
         '''
+
+        # target total item count
+        self.items_count = items_count
+
         # False possible probability in decimal
         self.fp_prob = fp_prob
 
@@ -44,9 +48,11 @@ class BloomFilter(object):
 
         # processed file list, e.g., 
         #  'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048'
+        # There could be duplicated file names in the list, in ordeer to track 
+        #   the insertion record
         self.processed_file_list = []
 
-    def get_itme_count(self):
+    def get_item_count(self):
         "get the number of items already inserted"
         return self.item_count
 
