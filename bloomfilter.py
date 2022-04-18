@@ -1,9 +1,13 @@
+# Reference: https://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/ 
+
 # Python 3 program to build Bloom Filter
 # Install mmh3 and bitarray 3rd party module first
 # pip install mmh3
 # pip install bitarray
 import math
 import mmh3
+import numpy as np
+
 from bitarray import bitarray
 
 
@@ -35,6 +39,25 @@ class BloomFilter(object):
         # initialize all bits as 0
         self.bit_array.setall(0)
 
+        # total number of items inserted
+        self.item_count = 0
+
+        # processed file list, e.g., 
+        #  'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048'
+        self.processed_file_list = []
+
+    def get_itme_count(self):
+        "get the number of items already inserted"
+        return self.item_count
+
+    def get_processed_file_list(self):
+        "get all the files that has been proceessed"
+        return self.processed_file_list
+
+    def add_to_processed_file_list(self, fname):
+        # e.g., 'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048'
+        self.processed_file_list.append(fname)
+
     def add_nonexist(self, item):
         '''
         Check if the item is in the filter, if not, add it
@@ -56,25 +79,10 @@ class BloomFilter(object):
                 self.bit_array[digest] = True
 
         if not exist:
+            self.item_count += 1
             return True
         else:
             return False
-
-    def add(self, item):
-        '''
-        Add an item in the filter
-        '''
-        digests = []
-        for i in range(self.hash_count):
-
-            # create digest for given item.
-            # i work as seed to mmh3.hash() function
-            # With different seed, digest created is different
-            digest = mmh3.hash(item, i) % self.size
-            digests.append(digest)
-
-            # set the bit True in bit_array
-            self.bit_array[digest] = True
 
     def check(self, item):
         '''
@@ -102,7 +110,7 @@ class BloomFilter(object):
             False Positive probability in decimal
         '''
         m = -(n * math.log(p))/(math.log(2)**2)
-        return int(m)
+        return int(np.ceil(m))
 
     @classmethod
     def get_hash_count(self, m, n):
@@ -117,5 +125,5 @@ class BloomFilter(object):
             number of items expected to be stored in filter
         '''
         k = (m/n) * math.log(2)
-        return int(k)
+        return int(np.ceil(k))
 
