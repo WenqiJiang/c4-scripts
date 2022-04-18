@@ -2,6 +2,17 @@
 Given a single jsonl file from local / GCP (in/out should be the same source), 
  (1) generate an output jsonl file filtering out existed passages
  (2) save the bloom filter 
+
+Example Usage:
+  python deeduplicate_by_bloom_filter.py --from_gs 0 \
+    --file_path_in ../c4-train.00000-of-02048_passages.jsonl \
+    --file_path_out ../c4-train.00000-of-02048_passages_deduplicated.jsonl \
+    --bloomf_local_path ./BloomFilterPassage.pkl
+  python deeduplicate_by_bloom_filter.py --from_gs 1 \
+    --file_path_in gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048.jsonl \
+    --file_path_out gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048_deduplicated.jsonl \
+    --bloomf_local_path ./BloomFilterPassage.pkl
+    --bloomf_gcp_path gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/BloomFilterPassage.pkl
 """
 
 import json
@@ -20,7 +31,6 @@ parser.add_argument('--file_path_in', type=str, default=0, help="with file name,
 parser.add_argument('--file_path_out', type=str, default=0, help="with file name, e.g., xxx.json or xxx.jsonl")
 parser.add_argument('--bloomf_local_path', type=str, default=0, help="local bloom filter obj (pkl file) directory, end with e.g., bloomf.pkl")
 parser.add_argument('--bloomf_gcp_path', type=str, default=0, help="save to GCP the bloom filter obj (pkl file), end with e.g., bloomf.pkl")
-parser.add_argument('--delete_local', type=int, default=1, help="1->delete converted json locally after push it to google storage")
 
 args = parser.parse_args()
 from_gs = args.from_gs
@@ -99,7 +109,7 @@ with jsonlines.open(local_path_out, 'w') as writer:
     writer.write_all(out_json_lines)
 
 if from_gs:
-    os.system("gsutil cp {} {}".format(local_path_out, file_path_out))
+    os.system("gsutil mv {} {}".format(local_path_out, file_path_out))
 
 t_end = time.time()
 t = t_end - t_start
