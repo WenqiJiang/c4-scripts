@@ -4,11 +4,11 @@ Given a single jsonl file from local / GCP (in/out should be the same source),
  (2) save the bloom filter 
 
 Example Usage:
-  python deeduplicate_by_bloom_filter.py --from_gs 0 \
+  python deduplicate_by_bloom_filter.py --from_gs 0 \
     --file_path_in ../c4-train.00000-of-02048_passages.jsonl \
     --file_path_out ../c4-train.00000-of-02048_passages_deduplicated.jsonl \
     --bloomf_local_path ./BloomFilterPassage.pkl
-  python deeduplicate_by_bloom_filter.py --from_gs 1 \
+  python deduplicate_by_bloom_filter.py --from_gs 1 \
     --file_path_in gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048.jsonl \
     --file_path_out gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048_deduplicated.jsonl \
     --bloomf_local_path ./BloomFilterPassage.pkl
