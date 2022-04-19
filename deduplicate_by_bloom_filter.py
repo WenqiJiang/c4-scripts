@@ -4,11 +4,11 @@ Given a single jsonl file from local / GCP (in/out should be the same source),
  (2) save the bloom filter 
 
 Example Usage:
-  python deeduplicate_by_bloom_filter.py --from_gs 0 \
+  python deduplicate_by_bloom_filter.py --from_gs 0 \
     --file_path_in ../c4-train.00000-of-02048_passages.jsonl \
     --file_path_out ../c4-train.00000-of-02048_passages_deduplicated.jsonl \
     --bloomf_local_path ./BloomFilterPassage.pkl
-  python deeduplicate_by_bloom_filter.py --from_gs 1 \
+  python deduplicate_by_bloom_filter.py --from_gs 1 \
     --file_path_in gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048.jsonl \
     --file_path_out gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048_deduplicated.jsonl \
     --bloomf_local_path ./BloomFilterPassage.pkl
@@ -38,7 +38,6 @@ file_path_in = args.file_path_in
 file_path_out = args.file_path_out
 bloomf_local_path = args.bloomf_local_path
 bloomf_gcp_path = args.bloomf_gcp_path
-delete_local = args.delete_local
 
 DEDUP_KEY = 'passage'
 
@@ -47,7 +46,7 @@ if not os.path.exists(bloomf_local_path):
     NUM_TOTAL_ITEMS = 1e10 # for the 10 B passagge dataset
     FALSE_POS_RATE = 0.001 # false positive probability
     print("WARNING: Bloom filter object path does not exist, please check the "
-        "path input if you the object. Ignore it if you are staring from scratch.")
+        "path input if you have the object. Ignore it if you are staring from scratch.")
     print("instantiating a new bloom filter...")
     bloomf = BloomFilter(NUM_TOTAL_ITEMS, FALSE_POS_RATE)
 else:
@@ -57,7 +56,7 @@ else:
     print("Finish loading... Existed inserted items: {}".format(bloomf.get_item_count()))
 
 print("Target total items: {}".format(bloomf.items_count))
-print("Size of bit array:{} == {} GB".format(bloomf.size))
+print("Size of bit array:{} == {} GB".format(bloomf.size, bloomf.size/1024/1024/1024/8))
 print("False positive Probability:{}".format(bloomf.fp_prob))
 print("Number of hash functions:{}".format(bloomf.hash_count))
 
@@ -76,6 +75,7 @@ with open(local_path_in, 'rb') as f:
     json_lines = f.readlines()
 
 t_read_json = time.time()
+print("Finished loading the input")
 
 
 """ Add to Bloom Filter """
@@ -87,7 +87,7 @@ for i, json_line in enumerate(json_lines):
     json_obj = json.loads(json_line)
     input_line_count += 1
 
-    if bloomf.add_nonexist(passage[DEDUP_KEY]):
+    if bloomf.add_nonexist(json_obj[DEDUP_KEY]):
         out_json_lines.append(json_obj)
         output_line_count += 1
 
@@ -96,6 +96,7 @@ for i, json_line in enumerate(json_lines):
 bloomf.add_to_processed_file_list(file_path_in)
 
 t_add_bloom = time.time()
+print("Finished insertion to the bloom filter")
 print("Total existed inserted items: {}".format(bloomf.get_item_count()))
 
 """ Write Output """
@@ -114,6 +115,9 @@ if from_gs:
 t_end = time.time()
 t = t_end - t_start
 t_bloom = t_add_bloom - t_read_json
+print("Finished writing output file")
+
+print("\n\n")
 print("Time consumption (total): {} sec", t)
 print("Time consumption (bloom insert): {} sec", t_bloom)
 print("Input lines: {}\tThroughput = {} lines / sec".format(input_line_count, input_line_count / t))

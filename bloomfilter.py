@@ -77,7 +77,8 @@ class BloomFilter(object):
             # create digest for given item.
             # i work as seed to mmh3.hash() function
             # With different seed, digest created is different
-            digest = mmh3.hash(item, i) % self.size
+            # mmh3.hash64 returns 2 64-bit integars, we use only the first one
+            digest = mmh3.hash64(item, i)[0] % self.size
             digests.append(digest)
             if self.bit_array[digest] == False:
                 exist = False
@@ -95,7 +96,8 @@ class BloomFilter(object):
         Check for existence of an item in filter
         '''
         for i in range(self.hash_count):
-            digest = mmh3.hash(item, i) % self.size
+            # mmh3.hash64 returns 2 64-bit integars, we use only the first one
+            digest = mmh3.hash64(item, i)[0] % self.size
             if self.bit_array[digest] == False:
 
                 # if any of bit is False then,its not present
