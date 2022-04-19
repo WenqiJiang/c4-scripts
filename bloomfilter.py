@@ -17,12 +17,15 @@ class BloomFilter(object):
     Class for Bloom filter, using murmur3 hash function
     '''
 
-    def __init__(self, items_count, fp_prob):
+    def __init__(self, items_count, fp_prob, dedup_key):
         '''
         items_count : int
             Number of items expected to be stored in bloom filter
         fp_prob : float
             False Positive probability in decimal
+        dedup_key: string
+            just to verify that the dedup_key is consistent across files, e.g., 
+                'text', 'passage', 'sentence' in the json object
         '''
 
         # target total item count
@@ -30,6 +33,10 @@ class BloomFilter(object):
 
         # False possible probability in decimal
         self.fp_prob = fp_prob
+
+        # verify that the dedup_key is consistent across files, e.g., 
+        #   'text', 'passage', 'sentence' in the json object
+        self.dedup_key = dedup_key
 
         # Size of bit array to use
         self.size = self.get_size(items_count, fp_prob)
@@ -48,9 +55,9 @@ class BloomFilter(object):
 
         # processed file list, e.g., 
         #  'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048'
-        # There could be duplicated file names in the list, in ordeer to track 
+        # There could be duplicated file names in the list, in order to track 
         #   the insertion record
-        self.processed_file_list = []
+        self.processed_file_list = set()
 
     def get_item_count(self):
         "get the number of items already inserted"
@@ -62,7 +69,7 @@ class BloomFilter(object):
 
     def add_to_processed_file_list(self, fname):
         # e.g., 'gs://c4-1billion/tensorflow_datasets/c4/enweb201930/3.0.1/c4-train.tfrecord-00000-of-02048'
-        self.processed_file_list.append(fname)
+        self.processed_file_list.add(fname)
 
     def add_nonexist(self, item):
         '''
