@@ -141,17 +141,17 @@ if __name__ == '__main__':
         file_path_in_list_uncleaned = f.readlines()
     file_path_in_list = []
     for item in file_path_in_list_uncleaned:
-        if item is not '' and item is not '\n':
+        if item != '' and item != '\n':
             file_path_in_list.append(item.replace('\n', ''))
 
     with open(file_path_out_list_path, 'r') as f:
         file_path_out_list_uncleaned = f.readlines()
     file_path_out_list = []
     for item in file_path_out_list_uncleaned:
-        if item is not '' and item is not '\n':
+        if item != '' and item != '\n':
             file_path_out_list.append(item.replace('\n', ''))
 
-    assert len(file_path_in_list) == len(file_path_out_list), 
+    assert len(file_path_in_list) == len(file_path_out_list), \
         "Input and output file numbers are inconsistent!"
 
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         with open(bloomf_local_path, 'rb') as f:
             bloomf = pickle.load(f)
         print("Finish loading... Existed inserted items: {}".format(bloomf.get_item_count()))
-        assert dedup_key == bloomf.dedup_key, "Inconsistent key for dedupiliation "
+        assert dedup_key == bloomf.dedup_key, "Inconsistent key for dedupiliation " \
             "in the python argument and the loaded Bloom Filter"
 
     print("Target total items: {}".format(bloomf.items_count))
