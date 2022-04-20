@@ -4,7 +4,7 @@ from random import shuffle
 n = 20 #no of items to add
 p = 0.05 #false positive probability
 
-bloomf = BloomFilter(n,p)
+bloomf = BloomFilter(n,p,None)
 print("Size of bit array:{}".format(bloomf.size))
 print("False positive Probability:{}".format(bloomf.fp_prob))
 print("Number of hash functions:{}".format(bloomf.hash_count))

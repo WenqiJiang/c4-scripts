@@ -36,6 +36,7 @@ import json
 import jsonlines
 import time
 import pickle
+import sys
 import os
 
 from bloomfilter import BloomFilter
@@ -132,6 +133,7 @@ def deduplicate_single_file(bloomf, dedup_key, file_path_in, file_path_out, from
     print("Input lines: {}\tThroughput = {} lines / sec".format(input_line_count, input_line_count / t))
     print("Output lines: {}\tThroughput = {} lines / sec".format(output_line_count, output_line_count / t))
     print("Total existed inserted items: {}".format(bloomf.get_item_count()))
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
@@ -176,6 +178,7 @@ if __name__ == '__main__':
     print("Size of bit array:{} == {} GB".format(bloomf.size, bloomf.size/1024/1024/1024/8))
     print("False positive Probability:{}".format(bloomf.fp_prob))
     print("Number of hash functions:{}".format(bloomf.hash_count))
+    sys.stdout.flush()
 
 
     """ Core Deduplication """
