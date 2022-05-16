@@ -23,6 +23,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from os import listdir
 
 import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file_path_in_list_path', type=str, default=0, help="a list of file name in xxx.json.gz (e.g., xxx.json or xxx.jsonl), stored as plain txt, separated by lines")
@@ -100,9 +101,12 @@ if __name__ == '__main__':
     print("Total CPU Cores: {}\tSetting the max workers as {}.".format(multiprocessing.cpu_count(), max_threads))
 
     arg_list = [(file_path_in_list[i], gs_out_dir) for i in range(len(file_path_in_list))]
-
-    with multiprocessing.Pool(processes=max_threads) as pool:
-        pool.map(get_urls, arg_list)
+    batch_size = 1000 # clear git lfs cache every 1000 objects, rm the file the cache still exists
+    batch_num = int(np.ceil(len(arg_list) / batch_size))
+    for batch_id in range(batch_num):
+        with multiprocessing.Pool(processes=max_threads) as pool:
+            pool.map(get_urls, arg_list[batch_id * batch_size: (batch_id + 1) * batch_size])
+        os.system('rm -rf .git/lfs/objects/*')
                     
     end = time.time()
     t_all = end - start
