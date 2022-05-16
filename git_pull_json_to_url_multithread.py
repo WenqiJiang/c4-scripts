@@ -1,11 +1,13 @@
 """
+The script must be copy to the c4 directory, otherwise git lfs pull will give nothing
+
 Given a list of input file paths (in json / jsonl format),
   generate output files in either sentences or passages
   input: local file
   output: gcs
   
 Example:
-  python json_to_url_multithread.py --file_path_in_list_path ./json_input_file_list --file_path_out_list_path passage_output_file_list --skip_exist 1
+  python git_pull_json_to_url_multithread.py --file_path_in_list_path ./c4_multilingual_list --gs_out_dir 'gs://c4multilingual201918/all_multilingual_url/' --skip_exist 1
 """
 
 
@@ -23,13 +25,13 @@ from os import listdir
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--file_path_in_list_path', type=str, default=0, help="a list of file name (e.g., xxx.json or xxx.jsonl), stored as plain txt, separated by lines")
-parser.add_argument('--file_path_out_list_path', type=str, default=0, help="a list of file name (e.g., xxx.json or xxx.jsonl), stored as plain txt, separated by lines")
+parser.add_argument('--file_path_in_list_path', type=str, default=0, help="a list of file name in xxx.json.gz (e.g., xxx.json or xxx.jsonl), stored as plain txt, separated by lines")
+parser.add_argument('--gs_out_dir', type=str, default=0, help="e.g., 'gs://c4multilingual201918/all_multilingual_url/'")
 parser.add_argument('--skip_exist', type=int, default=1, help="skip the files that is already inserted into the bloom filter")
 
 args = parser.parse_args()
 file_path_in_list_path = args.file_path_in_list_path
-file_path_out_list_path = args.file_path_out_list_path
+gs_out_dir = args.gs_out_dir
 skip_exist = args.skip_exist
 
 # multiprocessing cannot access global variable
@@ -38,16 +40,19 @@ total_file_count = None
 
 def get_urls(args):
 
-    path_in, path_out = args # path = dir + fname
+    path_in, gs_out_dir = args # path = dir + fname
     if skip_exist:
-        if os.path.exists(os.path.join(path_out)):
-            print("File {} already exists, skip...".format(path_out), file = sys.stdout)
-            # finished_count += 1
-            # print("Progress: {} out of {} files".format(finished_count, total_file_count), file = sys.stdout)
+        if os.system('gsutil ls {}'.format(path_out)) == 0:
+            print("File {} already exists, skip...".format(fname), file = sys.stdout)
             return
 
+    # download and decompress
+    os.system('git lfs pull --include "{}"'.format(os.path.join('multilingual/', path_in)))
+    os.system('gunzip {}'.format(os.path.join('multilingual/', path_in)))
+    path_in_decompressed = path_in_decompressed[:-3] # remove '.gz'
+
     # Read json file (1 object per line)
-    print("Processing file: {}".format(path_in), file = sys.stdout)
+    print("Processing file: {}".format(path_in_decompressed), file = sys.stdout)
     with open(path_in, 'rb') as f:
         json_lines = f.readlines()
 
@@ -59,15 +64,17 @@ def get_urls(args):
     
         output_lines += [{'url': url}]
 
-    path_out_dir = os.path.dirname(path_out)
-    if not os.path.exists(path_out_dir):
-        os.makedirs(path_out_dir, exist_ok=True) # mkdir -p 
-    with jsonlines.open(path_out, 'w') as writer:
-        writer.write_all(output_lines)
+    # write to local
+    tmp_path = os.path.join('/tmp', fname + '.json')
+    with open(tmp_path, 'w') as f:
+        f.writelines(json_strings)
 
-    print("Finished processing file: {}".format(path_out), file = sys.stdout)
-    # finished_count += 1
-    # print("Progress: {} out of {} files".format(finished_count, total_file_count), file = sys.stdout)
+    # cp to google storage
+    cmd = 'mv'
+    os.system("gsutil {} {} {}".format(cmd, tmp_path, os.path.join(gs_out_dir, path_in_decompressed)))
+    
+    print("Finished processing file: {}".format(fname), file = sys.stdout)
+
 
 
 if __name__ == '__main__':
@@ -81,16 +88,6 @@ if __name__ == '__main__':
         if item != '' and item != '\n':
             file_path_in_list.append(item.replace('\n', ''))
 
-    with open(file_path_out_list_path, 'r') as f:
-        file_path_out_list_uncleaned = f.readlines()
-    file_path_out_list = []
-    for item in file_path_out_list_uncleaned:
-        if item != '' and item != '\n':
-            file_path_out_list.append(item.replace('\n', ''))
-
-    assert len(file_path_in_list) == len(file_path_out_list), \
-        "Input and output file numbers are inconsistent!"
-
     """ Processing with Multi-threading """
     max_threads = multiprocessing.cpu_count() - 1
     if max_threads <= 0:
@@ -98,7 +95,7 @@ if __name__ == '__main__':
     # max_threads = 4
     print("Total CPU Cores: {}\tSetting the max workers as {}.".format(multiprocessing.cpu_count(), max_threads))
 
-    arg_list = [(file_path_in_list[i], file_path_out_list[i]) for i in range(len(file_path_in_list))]
+    arg_list = [(file_path_in_list[i], gs_out_dir) for i in range(len(file_path_in_list))]
 
     with multiprocessing.Pool(processes=max_threads) as pool:
         pool.map(get_urls, arg_list)
