@@ -13,11 +13,12 @@ with open(file_path_in_list_path, 'w') as f:
     for i in range(1024):
         lines.append(parent_url + 'c4-ru.tfrecord-{}-of-01024.json'.format(str(i).zfill(5)) + '\n' )
 
-    for i in range(32):
-        lines.append(parent_url + 'c4-ja.tfrecord-{}-of-00032.json'.format(str(i).zfill(5)) + '\n' )
+    # either ja or zh are corrupted (TFRecord)
+    #for i in range(32):
+    #    lines.append(parent_url + 'c4-ja.tfrecord-{}-of-00032.json'.format(str(i).zfill(5)) + '\n' )
 
-    for i in range(4):
-        lines.append(parent_url + 'c4-zh.tfrecord-{}-of-00004.json'.format(str(i).zfill(5)) + '\n' )
+    #for i in range(4):
+    #    lines.append(parent_url + 'c4-zh.tfrecord-{}-of-00004.json'.format(str(i).zfill(5)) + '\n' )
 
     f.writelines(lines)
 
