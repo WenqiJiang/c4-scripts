@@ -41,19 +41,21 @@ total_file_count = None
 def get_urls(args):
 
     path_in, gs_out_dir = args # path = dir + fname
+    path_in_decompressed = path_in[:-3] # remove '.gz'
+    path_out = os.path.join(gs_out_dir, path_in_decompressed)
     if skip_exist:
         if os.system('gsutil ls {}'.format(path_out)) == 0:
-            print("File {} already exists, skip...".format(fname), file = sys.stdout)
+            print("File {} already exists, skip...".format(path_in_decompressed), file = sys.stdout)
             return
 
     # download and decompress
-    os.system('git lfs pull --include "{}"'.format(os.path.join('multilingual/', path_in)))
-    os.system('gunzip {}'.format(os.path.join('multilingual/', path_in)))
-    path_in_decompressed = path_in_decompressed[:-3] # remove '.gz'
+    if not os.path.exists(os.path.join('multilingual/', path_in_decompressed)):
+        os.system('git lfs pull --include "{}"'.format(os.path.join('multilingual/', path_in)))
+        os.system('gunzip {}'.format(os.path.join('multilingual/', path_in)))
 
     # Read json file (1 object per line)
     print("Processing file: {}".format(path_in_decompressed), file = sys.stdout)
-    with open(path_in, 'rb') as f:
+    with open(os.path.join('multilingual/', path_in_decompressed), 'rb') as f:
         json_lines = f.readlines()
 
     output_lines = []
@@ -65,15 +67,17 @@ def get_urls(args):
         output_lines += [{'url': url}]
 
     # write to local
-    tmp_path = os.path.join('/tmp', fname + '.json')
-    with open(tmp_path, 'w') as f:
-        f.writelines(json_strings)
+    tmp_path = os.path.join('/tmp', path_in_decompressed)
+    with jsonlines.open(tmp_path, 'w') as f:
+        f.write_all(output_lines)
 
     # cp to google storage
     cmd = 'mv'
     os.system("gsutil {} {} {}".format(cmd, tmp_path, os.path.join(gs_out_dir, path_in_decompressed)))
+    os.system("rm {}".format(os.path.join('multilingual/', path_in_decompressed)))
+    os.system("rm {}".format(os.path.join('multilingual/', path_in)))
     
-    print("Finished processing file: {}".format(fname), file = sys.stdout)
+    print("Finished processing file: {}".format(path_in), file = sys.stdout)
 
 
 
